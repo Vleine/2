@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Блокнот целей</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #000;
+            color: #fff;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        #goalInput, #dueDate, #progressInput, #imageInput {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            margin-bottom: 10px;
+            border: 1px solid #444;
+            border-radius: 5px;
+            background-color: #222;
+            color: #fff;
+        }
+        #addGoalButton {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #goalsList {
+            margin-top: 20px;
+        }
+        .goalItem {
+            background-color: #222;
+            padding: 15px;
+            border: 1px solid #444;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        .goalItem img {
+            max-width: 100%;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .deleteButton {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .progressBar {
+            background-color: #444;
+            border-radius: 5px;
+            height: 10px;
+            margin-top: 10px;
+        }
+        .progressBarFill {
+            background-color: #28a745;
+            height: 100%;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Мои цели</h1>
+    <input type="text" id="goalInput" placeholder="Введите вашу цель">
+    <input type="date" id="dueDate" placeholder="Дата выполнения">
+    <input type="number" id="progressInput" placeholder="Процент выполнения (0-100)">
+    <input type="file" id="imageInput" accept="image/*">
+    <button id="addGoalButton">Добавить цель</button>
+    <div id="goalsList"></div>
+
+    <script>
+        // Инициализация Telegram Web App
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+
+        // Элементы DOM
+        const goalInput = document.getElementById('goalInput');
+        const dueDate = document.getElementById('dueDate');
+        const progressInput = document.getElementById('progressInput');
+        const imageInput = document.getElementById('imageInput');
+        const addGoalButton = document.getElementById('addGoalButton');
+        const goalsList = document.getElementById('goalsList');
+
+        // Загрузка целей из localStorage
+        let goals = JSON.parse(localStorage.getItem('goals')) || [];
+
+        // Функция для отображения целей
+        function renderGoals() {
+            goalsList.innerHTML = '';
+            goals.forEach((goal, index) => {
+                const goalItem = document.createElement('div');
+                goalItem.className = 'goalItem';
+                goalItem.innerHTML = `
+                    <div><strong>Цель:</strong> ${goal.text}</div>
+                    <div><strong>Дата выполнения:</strong> ${goal.dueDate}</div>
+                    <div><strong>Прогресс:</strong> ${goal.progress}%</div>
+                    <div class="progressBar">
+                        <div class="progressBarFill" style="width: ${goal.progress}%"></div>
+                    </div>
+                    ${goal.image ? `<img src="${goal.image}" alt="Изображение цели">` : ''}
+                    <button class="deleteButton" onclick="deleteGoal(${index})">Удалить</button>
+                `;
+                goalsList.appendChild(goalItem);
+            });
+        }
+
+        // Функция для добавления цели
+        function addGoal() {
+            const goalText = goalInput.value.trim();
+            const goalDueDate = dueDate.value;
+            const goalProgress = parseInt(progressInput.value);
+            const imageFile = imageInput.files[0];
+
+            if (goalText && goalDueDate && !isNaN(goalProgress) && goalProgress >= 0 && goalProgress <= 100) {
+                const goal = {
+                    text: goalText,
+                    dueDate: goalDueDate,
+                    progress: goalProgress,
+                    image: null,
+                };
+
+                if (imageFile) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        goal.image = e.target.result;
+                        goals.push(goal);
+                        localStorage.setItem('goals', JSON.stringify(goals));
+                        renderGoals();
+                        goalInput.value = '';
+                        dueDate.value = '';
+                        progressInput.value = '';
+                        imageInput.value = '';
+                    };
+                    reader.readAsDataURL(imageFile);
+                } else {
+                    goals.push(goal);
+                    localStorage.setItem('goals', JSON.stringify(goals));
+                    renderGoals();
+                    goalInput.value = '';
+                    dueDate.value = '';
+                    progressInput.value = '';
+                    imageInput.value = '';
+                }
+            } else {
+                alert('Пожалуйста, заполните все поля корректно!');
+            }
+        }
+
+        // Функция для удаления цели
+        window.deleteGoal = function (index) {
+            goals.splice(index, 1);
+            localStorage.setItem('goals', JSON.stringify(goals));
+            renderGoals();
+        };
+
+        // Обработчик кнопки "Добавить цель"
+        addGoalButton.addEventListener('click', addGoal);
+
+        // Отображаем цели при загрузке страницы
+        renderGoals();
+    </script>
+</body>
+</html>
